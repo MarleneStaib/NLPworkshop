@@ -1,3 +1,4 @@
 gitignore.txt
-.ipynb_checkpoints
-labsolutions/
+labs/.ipynb_checkpoints/*
+*.pyc
+labsolutions/*
