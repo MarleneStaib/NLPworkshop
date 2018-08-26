@@ -156,7 +156,7 @@ def main():
 
     #write the raw counts to dataframes
     proc_d.write_df("../data/triangles_depression.csv",depression=True)
-    #proc_s.write_df("../data/triangles_scizophrenia.csv")
+    proc_s.write_df("../data/triangles_scizophrenia.csv")
 
     #write the collocations to dataframes
 
