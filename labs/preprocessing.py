@@ -66,10 +66,10 @@ class Preprocessing:
         pass
 
 
-    def preprocesses_scizophrenia_data(self,filepath):
+    def preprocesses_schizophrenia_data(self,filepath):
         """
         Parse out participant, group and text information in the way that matches
-        the organisation of the scizophrenia data files.
+        the organisation of the schizophrenia data files.
         lines are organised as follows (tab seperated file):
         Subject	Task	StartTime	Transcript	EndTime	Conservative
         """
@@ -106,7 +106,7 @@ class Preprocessing:
         """
         Create a dataframe from nested dictionaries and write it to a csv file.
         :param writepath: name of path to save dataframe (csv)
-        :param depression: whether or not the data is depression data (default: scizophrenia)
+        :param depression: whether or not the data is depression data (default: schizophrenia)
         """
         vocab = sorted(list(self.get_full_vocab()))
         print(len(vocab))
@@ -145,18 +145,18 @@ class Preprocessing:
 def main():
     path_to_data = "/home/marlene/Dropbox/TrianglesTranscripts"
     proc_s = Preprocessing()
-    proc_d = Preprocessing() #have a seperate object for depressed and scizophrenic
+    proc_d = Preprocessing() #have a seperate object for depressed and schizophrenic
 
     for filename in glob.glob(path_to_data+"/*"):
         #the schizophreania and depression data are organised in a different way
         if filename == path_to_data+"/DepressionTriangles.txt":
             proc_d.preprocesses_depression_data(filename)
         else:
-            proc_s.preprocesses_scizophrenia_data(filename)
+            proc_s.preprocesses_schizophrenia_data(filename)
 
     #write the raw counts to dataframes
     proc_d.write_df("../data/triangles_depression.csv",depression=True)
-    proc_s.write_df("../data/triangles_scizophrenia.csv")
+    proc_s.write_df("../data/triangles_schizophrenia.csv")
 
     #write the collocations to dataframes
 
