@@ -39,6 +39,12 @@ class Preprocessing:
         self.collocations = {}
         self.num_words = 0
 
+    def remove_single_words(self, count_dict):
+        for word in count_dict.keys():
+            if count_dict[word] < 2:
+                del count_dict[word]
+        return count_dict
+
 
     def get_wordcounts(self,subject,transcript):
         """
@@ -122,7 +128,11 @@ class Preprocessing:
             df['label'] = [name[13:21] for name in df.index]
         df = df.reset_index()
         df = df.drop('index', axis=1)
-        #print(df.shape)
+        #drop words that only appear once in the whole dataset
+        for col in df.columns:
+            if len(df[df[col]!=0]) <2:
+                df.drop(col,inplace=True,axis=1)
+        print(df.shape)
         #print(df.head())
         #write to csv
         df.to_csv(writepath)
