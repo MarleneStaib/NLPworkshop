@@ -54,15 +54,18 @@ class Preprocessing:
         if subject not in self.count_data:
             self.count_data[subject] = {}
         # now iterate over words and keep only the counts
-        for word in transcript.split():
-            self.num_words +=1
-            #do some cleaning up
-            word = word.lower().strip()
-            #let's be strict and only keep WORDS made of LETTERS
-            word = re.sub('[^a-zA-Z]', '', word)
-            if word not in self.count_data[subject]:
-                self.count_data[subject][word] = 0
-            self.count_data[subject][word] += 1
+        try:
+            for word in transcript.split():
+                self.num_words +=1
+                #do some cleaning up
+                word = word.lower().strip()
+                #let's be strict and only keep WORDS made of LETTERS
+                word = re.sub('[^a-zA-Z]', '', word)
+                if word not in self.count_data[subject]:
+                    self.count_data[subject][word] = 0
+                self.count_data[subject][word] += 1
+        except:
+            print(transcript)
 
 
     def get_collocations(self,subject,transcript):
@@ -107,31 +110,52 @@ class Preprocessing:
             self.get_wordcounts(subject,transcript)
             self.get_collocations(subject,transcript)
 
+    def preprocesses_fakenews_data(self,filepath):
+        """
+        Parse out participant, group and text information in the way that matches
+        the organisation of the fake news data files.
+        format: id,title,author,text,label
+        """
+        # lines are organised: Subject	Task	StartTime	Transcript	EndTime	Conservative
+        data = pd.read_csv(filepath)
+        for idx, row in data.iterrows():
+            if idx > 8000:
+                break
+            id = str(row['id'])+ "_" + str(row['label'])
+            transcript = row['text']
+            self.get_wordcounts(id,transcript)
+            #self.get_collocations(subject,transcript)
 
-    def write_df(self, writepath, depression=False):
+
+    def write_df(self, writepath, datagroup=""):
         """
         Create a dataframe from nested dictionaries and write it to a csv file.
         :param writepath: name of path to save dataframe (csv)
         :param depression: whether or not the data is depression data (default: schizophrenia)
         """
-        vocab = sorted(list(self.get_full_vocab()))
+        vocab = sorted(self.get_full_vocab())
         print(len(vocab))
         print(self.num_words)
         #turn the data into a dataframe
         df = pd.DataFrame(columns=vocab)
         df = pd.DataFrame.from_dict(self.count_data, orient="index")
+        print("DF loaded ok")
         df = df.fillna(0) #fill the NAs with 0s -- unobserved words are 0 counts
         #add labels (instead of IDs)
-        if depression:
+        if datagroup=="depression":
             df['label'] = [re.sub("[0-9]", "", name) for name in df.index]
-        else:
+        elif datagroup=="schizophrenia":
             df['label'] = [name[13:21] for name in df.index]
+        elif datagroup=="fakenews":
+            df['label'] = [name.split("_")[1] for name in df.index]
+        print("Labels created ok")
+        print(df['label'][:5])
         df = df.reset_index()
         df = df.drop('index', axis=1)
         #drop words that only appear once in the whole dataset
-        for col in df.columns:
-            if len(df[df[col]!=0]) <2:
-                df.drop(col,inplace=True,axis=1)
+        #for col in df.columns:
+        #    if len(df[df[col]!=0]) <100:
+        #        df.drop(col,inplace=True,axis=1)
         print(df.shape)
         #print(df.head())
         #write to csv
@@ -143,10 +167,23 @@ class Preprocessing:
         Get the set of unique words across the dataset. This is useful for turning
         (dense) word count dictionaries into (sparse) feature vectors.
         """
-        vocab = set()
+        full_vocab = set()
+        vocab = {}
         for _, subject in self.count_data.items():
-            vocab.update(subject.keys())
-        return vocab
+            for word in subject.keys():
+                if word not in vocab:
+                    vocab[word] = 0
+                vocab[word] += 1
+        for word in vocab.keys():
+            if vocab[word] > 80:
+                full_vocab.add(word)
+            else:
+                for _, subject in self.count_data.items():
+                    try:
+                        del subject[word]
+                    except:
+                        continue
+        return list(full_vocab)
 
 
 ########
@@ -165,12 +202,18 @@ def main():
             proc_s.preprocesses_schizophrenia_data(filename)
 
     #write the raw counts to dataframes
-    proc_d.write_df("../data/triangles_depression.csv",depression=True)
-    proc_s.write_df("../data/triangles_schizophrenia.csv")
+    proc_d.write_df("../data/triangles_depression.csv",datagroup="depression")
+    proc_s.write_df("../data/triangles_schizophrenia.csv",datagroup="schizophrenia")
 
     #write the collocations to dataframes
+
+def main2():
+    proc = Preprocessing()
+    path_to_data = "fakenews.csv"
+    proc.preprocesses_fakenews_data(path_to_data)
+    proc.write_df("data/fakenews.csv",datagroup="fakenews")
 
 
 #run
 if __name__ == "__main__":
-    main()
+    main2()
